@@ -1,100 +1,7 @@
 {
-    "support": {
-        "title": "Support Panel",
-        "description": "Select an option below",
-        "style": "dropdown",
-        "options": [
-            {
-                "label": "test",
-                "description": "test",
-                "emoji": "",
-                "category_id": 1468295417124098326
-            }
-        ]
-    },
     "test": {
         "title": "Support Panel",
         "description": "Select an option below",
-        "style": "buttons",
-        "options": []
-    },
-    "test2": {
-        "title": "Design Aura | Order Here",
-        "description": "<a:purple_dot:1469968737095385227>  Need something custom?\nMake a ticket now for logos, banners, headers, bots, or full Discord setups!\nSimply select what you want from the dropdown, and our team will bring your vision to life.",
-        "color": "",
-        "footer_text": "Design Aura • Professional Design Services",
-        "footer_icon": "https://cdn.discordapp.com/attachments/1274766334625976330/1400140643891810405/image.png?ex=698956d6&is=69880556&hm=49abb895b53c0cec480160f4e6090edb5d9f3b5014ea14091e68d6863b6b4440",
-        "image_url": "https://images-ext-1.discordapp.net/external/JfD2o3LHEHAXnA1nTRaAK3O8BgL7nnU3_-SmAgdiDY4/%3Fsize%3D512/https/cdn.discordapp.com/banners/1400134948064727060/796a105774b8b71c28e67d7649d8c29e.png",
-        "thumbnail_url": "https://cdn.discordapp.com/attachments/1274766334625976330/1400140643891810405/image.png?ex=698956d6&is=69880556&hm=49abb895b53c0cec480160f4e6090edb5d9f3b5014ea14091e68d6863b6b4440",
-        "fields": [],
-        "style": "dropdown",
-        "options": [
-            {
-                "label": "logo",
-                "description": "test",
-                "emoji": "",
-                "category_id": 1468295417124098326,
-                "ticket_prefix": "test2"
-            },
-            {
-                "label": "banner",
-                "description": "test",
-                "emoji": "",
-                "category_id": 1468295417124098326,
-                "ticket_prefix": "bb"
-            },
-            {
-                "id": "67afeba9",
-                "label": "test4",
-                "description": "test",
-                "emoji": null,
-                "type": "embed",
-                "embed_name": "test4"
-            },
-            {
-                "id": "d7608bac",
-                "label": "bhavya24",
-                "description": "bhavya24",
-                "emoji": null,
-                "type": "embed",
-                "embed_name": null
-            },
-            {
-                "id": "6633a481",
-                "label": "bhavya24",
-                "description": "bhavya",
-                "emoji": null,
-                "type": "ticket",
-                "category_id": 1468295417124098326,
-                "ticket_prefix": null,
-                "limit": null
-            },
-            {
-                "id": "6a4935d9",
-                "label": "bhavya",
-                "description": "bhavya",
-                "emoji": null,
-                "type": "embed",
-                "embed_name": "test"
-            }
-        ],
-        "transcript_channel_id": 1468295522183020657
-    },
-    "bhavya": {
-        "title": "Support Panel",
-        "description": "Select an option below",
-        "color": "",
-        "footer_text": "",
-        "footer_icon": "",
-        "image_url": "",
-        "thumbnail_url": "",
-        "fields": [],
-        "style": "buttons",
-        "options": []
-    },
-    "test3": {
-        "title": "Support Panel",
-        "description": "Select an option below",
         "color": "",
         "footer_text": "",
         "footer_icon": "",
@@ -104,67 +11,26 @@
         "style": "dropdown",
         "options": [
             {
-                "id": "f9b450cf",
-                "label": "test2",
-                "description": "test",
-                "emoji": null,
-                "type": "ticket",
-                "category_id": 1468295417124098326,
-                "ticket_prefix": null,
-                "limit": null
-            },
-            {
-                "id": "c137120c",
-                "label": "test4",
-                "description": "test",
-                "emoji": null,
-                "type": "ticket",
-                "category_id": 1468295417124098326,
-                "ticket_prefix": null,
-                "limit": null
-            },
-            {
-                "id": "5e0c87c7",
+                "id": "169e1e39",
                 "label": "test",
                 "description": "test",
+                "emoji": null,
+                "type": "ticket",
+                "category_id": 1468295417124098326,
+                "ticket_prefix": null,
+                "limit": null,
+                "panel_name": "test"
+            },
+            {
+                "id": "12091b2b",
+                "label": "test1",
+                "description": "embed",
                 "emoji": null,
                 "type": "embed",
-                "embed_name": "test"
+                "embed_name": "test",
+                "panel_name": "test"
             }
         ],
-        "transcript_channel_id": 1468295522183020657
-    },
-    "test4": {
-        "title": "Support Panel",
-        "description": "Select an option below",
-        "color": "",
-        "footer_text": "",
-        "footer_icon": "",
-        "image_url": "",
-        "thumbnail_url": "",
-        "fields": [],
-        "style": "buttons",
-        "options": [
-            {
-                "id": "a9d6ace2",
-                "label": "test",
-                "description": "test",
-                "emoji": null,
-                "type": "ticket",
-                "category_id": 1468295417124098326,
-                "ticket_prefix": null,
-                "limit": null
-            },
-            {
-                "id": "164a4a06",
-                "label": "test2",
-                "description": "test2",
-                "emoji": null,
-                "type": "ticket",
-                "category_id": 1468295417124098326,
-                "ticket_prefix": null,
-                "limit": null
-            }
-        ]
+        "transcript_channel_id": 1468418345576562748
     }
 }

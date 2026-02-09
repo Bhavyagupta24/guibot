@@ -1,5 +1,6 @@
 import json
 import os
+import uuid
 
 DATA_DIR = "data/ticket_panels"
 
@@ -41,10 +42,45 @@ class PanelStorage:
         self.save_panels(guild_id, panels)
 
     # ===============================
+    # ENSURE PANEL INTEGRITY
+    # ===============================
+    def _ensure_panel_integrity(self, guild_id: int, panel_name: str, panel: dict) -> dict:
+        """
+        Ensure panel options have required fields (id, panel_name).
+        Fixes old panels that might be missing these fields and saves changes.
+        """
+        if not panel or "options" not in panel:
+            return panel
+        
+        options = panel.get("options", [])
+        needs_save = False
+        
+        for opt in options:
+            # Add missing ID (only if it doesn't exist)
+            if not opt.get("id"):
+                opt["id"] = uuid.uuid4().hex[:8]
+                needs_save = True
+            
+            # Add missing panel_name
+            if not opt.get("panel_name"):
+                opt["panel_name"] = panel_name
+                needs_save = True
+        
+        # Save back to storage if changes were made
+        if needs_save:
+            self.save_panel(guild_id, panel_name, panel)
+        
+        return panel
+
+    # ===============================
     # GET SINGLE PANEL
     # ===============================
     def get_panel(self, guild_id: int, panel_name: str):
-        return self.load_panels(guild_id).get(panel_name)
+        panel = self.load_panels(guild_id).get(panel_name)
+        if panel:
+            # Ensure all options have required fields (and save if changed)
+            panel = self._ensure_panel_integrity(guild_id, panel_name, panel)
+        return panel
 
     # ===============================
     # GET ALL PANELS (NEW)

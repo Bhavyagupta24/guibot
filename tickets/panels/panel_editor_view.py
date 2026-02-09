@@ -255,6 +255,9 @@ class TicketPanelEditorView(discord.ui.View):
                 })
                 print(f"DEBUG: Embed option finalized: {option}")
             
+            # 🔐 CRITICAL: Add panel_name so ticket creation knows which panel it belongs to
+            option["panel_name"] = self.panel_name
+            
             print(f"DEBUG: About to append option to panel...")
             self.panel["options"].append(option)
             print(f"DEBUG: Option appended! Panel now has {len(self.panel['options'])} options")

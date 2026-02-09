@@ -279,11 +279,173 @@ class TicketCog(commands.Cog):
         embed.add_field(name="Options", value=str(len(panel.get("options", []))), inline=True)
         embed.add_field(
             name="Transcript Channel",
-            value=transcript_channel.mention if transcript_channel else "❌ Not set",
+            value=transcript_channel.mention if transcript_channel else "Not set",
             inline=False
         )
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    # ===============================
+    # /ticket support-team
+    # ===============================
+    support_team = app_commands.Group(
+        name="support-team",
+        description="Manage support team access to tickets",
+        parent=ticket
+    )
+
+    @support_team.command(name="set")
+    @app_commands.default_permissions(administrator=True)
+    async def set_support_team(
+        self,
+        interaction: discord.Interaction,
+        role: discord.Role
+    ):
+        """Set the support team role for ticket management"""
+        if not interaction.guild:
+            await interaction.response.send_message(
+                "This command can only be used in a server.",
+                ephemeral=True
+            )
+            return
+
+        # Store support team role ID in panel storage
+        # Create a settings file if needed
+        import json
+        import os
+        settings_dir = "data/settings"
+        os.makedirs(settings_dir, exist_ok=True)
+        settings_file = os.path.join(settings_dir, f"{interaction.guild.id}.json")
+
+        settings = {}
+        if os.path.exists(settings_file):
+            with open(settings_file, "r", encoding="utf-8") as f:
+                settings = json.load(f)
+
+        settings["support_team_role_id"] = role.id
+        
+        with open(settings_file, "w", encoding="utf-8") as f:
+            json.dump(settings, f, indent=4, ensure_ascii=False)
+
+        await interaction.response.send_message(
+            f"Support team role set to {role.mention}.\n"
+            f"They will now have access to all new and existing ticket channels.",
+            ephemeral=True
+        )
+
+    @support_team.command(name="view")
+    @app_commands.default_permissions(administrator=True)
+    async def view_support_team(self, interaction: discord.Interaction):
+        """View the current support team role"""
+        if not interaction.guild:
+            await interaction.response.send_message(
+                "This command can only be used in a server.",
+                ephemeral=True
+            )
+            return
+
+        import json
+        import os
+        settings_file = os.path.join("data/settings", f"{interaction.guild.id}.json")
+
+        if not os.path.exists(settings_file):
+            await interaction.response.send_message(
+                "No support team role has been set yet. Use `/ticket support-team set` to configure one.",
+                ephemeral=True
+            )
+            return
+
+        with open(settings_file, "r", encoding="utf-8") as f:
+            settings = json.load(f)
+
+        role_id = settings.get("support_team_role_id")
+        if not role_id:
+            await interaction.response.send_message(
+                "No support team role has been set yet. Use `/ticket support-team set` to configure one.",
+                ephemeral=True
+            )
+            return
+
+        role = interaction.guild.get_role(role_id)
+        if not role:
+            await interaction.response.send_message(
+                f"Support team role (ID: {role_id}) no longer exists in this server.",
+                ephemeral=True
+            )
+            return
+
+        await interaction.response.send_message(
+            f"Current support team role: {role.mention}",
+            ephemeral=True
+        )
+
+    @support_team.command(name="grant-access")
+    @app_commands.default_permissions(administrator=True)
+    async def grant_support_team_access(self, interaction: discord.Interaction):
+        """Grant support team access to all existing ticket channels"""
+        if not interaction.guild:
+            await interaction.response.send_message(
+                "This command can only be used in a server.",
+                ephemeral=True
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        import json
+        import os
+        settings_file = os.path.join("data/settings", f"{interaction.guild.id}.json")
+
+        if not os.path.exists(settings_file):
+            await interaction.followup.send(
+                "No support team role has been set yet. Use `/ticket support-team set` to configure one.",
+                ephemeral=True
+            )
+            return
+
+        with open(settings_file, "r", encoding="utf-8") as f:
+            settings = json.load(f)
+
+        role_id = settings.get("support_team_role_id")
+        if not role_id:
+            await interaction.followup.send(
+                "No support team role has been set yet. Use `/ticket support-team set` to configure one.",
+                ephemeral=True
+            )
+            return
+
+        role = interaction.guild.get_role(role_id)
+        if not role:
+            await interaction.followup.send(
+                f"Support team role (ID: {role_id}) no longer exists in this server.",
+                ephemeral=True
+            )
+            return
+
+        # Find all ticket channels and grant access
+        # Ticket channels typically have "panel:" in the topic
+        updated = 0
+        
+        for channel in interaction.guild.text_channels:
+            if channel.topic and "panel:" in channel.topic:
+                try:
+                    # Add support team permissions
+                    await channel.set_permissions(
+                        role,
+                        view_channel=True,
+                        send_messages=True,
+                        read_message_history=True,
+                        manage_messages=True,
+                        manage_channels=True
+                    )
+                    updated += 1
+                except discord.Forbidden:
+                    pass
+
+        await interaction.followup.send(
+            f"Granted {role.mention} access to **{updated}** ticket channel(s).",
+            ephemeral=True
+        )
 
     # ===============================
     # AUTOCOMPLETE

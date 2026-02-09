@@ -30,11 +30,13 @@ class TicketDropdownView(discord.ui.View):
         if not options:
             return
 
-        self.add_item(TicketDropdown(options))
+        self.add_item(TicketDropdown(options, guild_id, panel_name))
 
 
 class TicketDropdown(discord.ui.Select):
-    def __init__(self, options: list[dict]):
+    def __init__(self, options: list[dict], guild_id: int, panel_name: str):
+        self.guild_id = guild_id
+        self.panel_name = panel_name
         self.options_data: dict[str, dict] = {}
 
         select_options: list[discord.SelectOption] = []
@@ -67,10 +69,40 @@ class TicketDropdown(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         option_id = self.values[0]
-        option = self.options_data.get(option_id)
+        
+        # Defer early to prevent timeouts on long operations
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
+        
+        # Load panel fresh from storage to handle panel edits and restarts
+        storage = PanelStorage()
+        panel = storage.get_panel(self.guild_id, self.panel_name)
+        
+        if not panel:
+            await interaction.followup.send(
+                "❌ Panel configuration not found.",
+                ephemeral=True
+            )
+            return
+        
+        # Try to find option by ID first
+        option = next(
+            (o for o in panel.get("options", []) if o.get("id") == option_id),
+            None
+        )
+        
+        # Fallback: if option_id is legacy_{index}, try to extract the index
+        if not option and option_id.startswith("legacy_"):
+            try:
+                index = int(option_id.split("_")[1])
+                options = panel.get("options", [])
+                if 0 <= index < len(options):
+                    option = options[index]
+            except (ValueError, IndexError):
+                pass
 
         if not option:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "❌ This option is no longer valid.",
                 ephemeral=True
             )
@@ -88,7 +120,7 @@ class TicketDropdown(discord.ui.Select):
             embed_name = option.get("embed_name")
 
             if not embed_name:
-                await interaction.response.send_message(
+                await interaction.followup.send(
                     "❌ No embed linked to this option.",
                     ephemeral=True
                 )
@@ -98,7 +130,7 @@ class TicketDropdown(discord.ui.Select):
             embed_data = storage.load_embed(interaction.guild.id, embed_name)
 
             if not embed_data:
-                await interaction.response.send_message(
+                await interaction.followup.send(
                     f"❌ Embed **{embed_name}** no longer exists.",
                     ephemeral=True
                 )
@@ -139,14 +171,14 @@ class TicketDropdown(discord.ui.Select):
                     inline=field["inline"]
                 )
 
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 embed=embed,
                 ephemeral=True
             )
             return
 
         # ───────────── FALLBACK ─────────────
-        await interaction.response.send_message(
+        await interaction.followup.send(
             "❌ Invalid panel option type.",
             ephemeral=True
         )

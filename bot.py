@@ -41,9 +41,14 @@ async def on_ready():
     print("🔁 Registered persistent TicketCloseView")    
 
     for guild in bot.guilds:
-        panels = storage.load_panels(guild.id)
+        panels_dict = storage.load_panels(guild.id)
 
-        for panel_name, panel in panels.items():
+        for panel_name in panels_dict.keys():
+            # Use get_panel to ensure integrity (adds missing IDs and saves if needed)
+            panel = storage.get_panel(guild.id, panel_name)
+            if not panel:
+                continue
+            
             options = panel.get("options", [])
             if not options:
                 continue

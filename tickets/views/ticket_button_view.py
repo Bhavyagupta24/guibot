@@ -31,13 +31,14 @@ class TicketButtonView(discord.ui.View):
             return
 
         for option in options:
-            self.add_item(TicketButton(option, guild_id))
+            self.add_item(TicketButton(option, guild_id, panel_name))
 
 
 class TicketButton(discord.ui.Button):
-    def __init__(self, option: dict, guild_id: int):
-        self.option = option
+    def __init__(self, option: dict, guild_id: int, panel_name: str):
+        self.option_id = option.get("id")
         self.guild_id = guild_id
+        self.panel_name = panel_name
 
         emoji = parse_emoji(option.get("emoji"))
 
@@ -49,16 +50,44 @@ class TicketButton(discord.ui.Button):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        option_type = self.option.get("type", "ticket")
+        # Load fresh option from storage (handles panel edits and restarts)
+        storage = PanelStorage()
+        panel = storage.get_panel(self.guild_id, self.panel_name)
+        
+        if not panel:
+            await interaction.response.send_message(
+                "❌ Panel not found.",
+                ephemeral=True
+            )
+            return
+        
+        # Find option by ID
+        option = next(
+            (o for o in panel.get("options", []) if o.get("id") == self.option_id),
+            None
+        )
+        
+        if not option:
+            await interaction.response.send_message(
+                "❌ This option is no longer available.",
+                ephemeral=True
+            )
+            return
+
+        option_type = option.get("type", "ticket")
 
         # ───────────── TICKET OPTION ─────────────
         if option_type == "ticket":
-            await TicketManager.create_ticket(interaction, self.option)
+            # Defer early to acknowledge the interaction and avoid timeouts
+            if not interaction.response.is_done():
+                await interaction.response.defer(ephemeral=True)
+
+            await TicketManager.create_ticket(interaction, option)
             return
 
         # ───────────── EMBED OPTION ─────────────
         if option_type == "embed":
-            embed_name = self.option.get("embed_name")
+            embed_name = option.get("embed_name")
 
             if not embed_name:
                 await interaction.response.send_message(

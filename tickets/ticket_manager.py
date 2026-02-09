@@ -2,6 +2,7 @@ import discord
 import re
 from datetime import datetime
 from io import BytesIO
+from discord import utils as discord_utils
 
 from tickets.constants import DEFAULT_TICKET_TEMPLATE
 from tickets.utils.ticket_embed_builder import build_ticket_embed
@@ -29,23 +30,66 @@ class TicketCloseView(discord.ui.View):
         """Close ticket and generate transcript"""
         await interaction.response.defer(ephemeral=True)
 
+        # Check if user is ticket owner or support staff
         channel = interaction.channel
-        ticket_owner = await interaction.client.fetch_user(self.ticket_owner_id)
+        
+        # Resolve ticket owner
+        ticket_owner_id = self.ticket_owner_id
+        if channel.topic:
+            m = re.search(r"owner:(\d+)", channel.topic)
+            if m:
+                try:
+                    ticket_owner_id = int(m.group(1))
+                except ValueError:
+                    pass
+
+        # Check permissions: owner or support staff or admin
+        is_owner = interaction.user.id == ticket_owner_id
+        is_admin = interaction.user.guild_permissions.administrator
+        
+        is_support_staff = False
+        import json
+        import os
+        settings_file = os.path.join("data/settings", f"{interaction.guild.id}.json")
+        
+        if os.path.exists(settings_file):
+            with open(settings_file, "r", encoding="utf-8") as f:
+                settings = json.load(f)
+                support_team_role_id = settings.get("support_team_role_id")
+                
+                if support_team_role_id:
+                    support_role = interaction.guild.get_role(support_team_role_id)
+                    if support_role and support_role in interaction.user.roles:
+                        is_support_staff = True
+
+        if not (is_owner or is_support_staff or is_admin):
+            await interaction.followup.send(
+                "You don't have permission to close this ticket.",
+                ephemeral=True
+            )
+            return
+
+        ticket_owner = await interaction.client.fetch_user(ticket_owner_id)
 
         # ───────────── RESOLVE PANEL NAME (SOURCE OF TRUTH) ─────────────
         panel_name = self.panel_name
-        if channel.topic and channel.topic.startswith("panel:"):
-            panel_name = channel.topic.replace("panel:", "").strip()
+        if channel.topic:
+            # Extract panel name from topic format: "panel:{name};owner:{id}"
+            if "panel:" in channel.topic:
+                panel_part = channel.topic.split("panel:")[1].split(";")[0].strip()
+                if panel_part:
+                    panel_name = panel_part
 
         # ───────────── LOAD PANEL CONFIG ─────────────
+        # Use interaction.guild.id instead of self.guild_id (which may be 0 after restart)
         storage = PanelStorage()
-        panel = storage.get_panel(self.guild_id, panel_name)
+        panel = storage.get_panel(interaction.guild.id, panel_name)
         transcript_channel_id = panel.get("transcript_channel_id") if panel else None
 
         if not transcript_channel_id:
             await interaction.followup.send(
-                "❌ No transcript channel configured for this panel!\n"
-                "💡 Use `/ticket set-transcript <channel>` to set one.",
+                "No transcript channel configured for this panel.\n"
+                "Use `/ticket set-transcript <channel>` to set one.",
                 ephemeral=True
             )
             return
@@ -53,14 +97,14 @@ class TicketCloseView(discord.ui.View):
         transcript_channel = interaction.guild.get_channel(transcript_channel_id)
         if not transcript_channel:
             await interaction.followup.send(
-                "❌ Transcript channel not found!",
+                "Transcript channel not found!",
                 ephemeral=True
             )
             return
 
         try:
             # ───────────── GENERATE TRANSCRIPT ─────────────
-            await interaction.followup.send("⏳ Generating transcript...", ephemeral=True)
+            await interaction.followup.send("Generating transcript...", ephemeral=True)
 
             print(f"DEBUG: Generating transcript for {channel.name} (panel={panel_name})")
 
@@ -73,46 +117,74 @@ class TicketCloseView(discord.ui.View):
 
             # ───────────── TRANSCRIPT EMBED ─────────────
             user_list = "\n".join(
-                [f"• {u.mention} - @{u.name}#{u.discriminator}" for u in list(users_in_transcript)[:15]]
+                [f"• {u.mention}" for u in list(users_in_transcript)[:10]]
             )
-            if len(users_in_transcript) > 15:
-                user_list += f"\n... and {len(users_in_transcript) - 15} more"
+            if len(users_in_transcript) > 10:
+                user_list += f"\n• ... and **{len(users_in_transcript) - 10}** more"
+
+            # Calculate ticket duration (use discord.utils.utcnow() to get offset-aware datetime)
+            duration = discord_utils.utcnow() - channel.created_at
+            days = duration.days
+            hours = duration.seconds // 3600
+            minutes = (duration.seconds % 3600) // 60
+            
+            if days > 0:
+                duration_str = f"{days}d {hours}h {minutes}m"
+            elif hours > 0:
+                duration_str = f"{hours}h {minutes}m"
+            else:
+                duration_str = f"{minutes}m"
 
             transcript_embed = discord.Embed(
-                title=f"📑 Ticket Transcript: #{channel.name}",
-                color=discord.Color.blurple(),
+                title="Ticket Transcript",
+                description=f"**Ticket:** `{channel.name}`\n**Owner:** {ticket_owner.mention}",
+                color=discord.Color.from_str("#7B5BE8"),
                 timestamp=datetime.now()
             )
+            
             transcript_embed.add_field(
                 name="Ticket Owner",
-                value=f"{ticket_owner.mention}\n@{ticket_owner.name}#{ticket_owner.discriminator}",
+                value=ticket_owner.mention,
                 inline=True
             )
             transcript_embed.add_field(
-                name="Panel Name",
-                value=panel_name,
+                name="Panel",
+                value=f"`{panel_name}`",
                 inline=True
             )
             transcript_embed.add_field(
-                name="Ticket Name",
-                value=channel.name,
+                name="Duration",
+                value=duration_str,
+                inline=True
+            )
+            
+            transcript_embed.add_field(
+                name="Created",
+                value=f"<t:{int(channel.created_at.timestamp())}:f>",
                 inline=True
             )
             transcript_embed.add_field(
-                name="Created At",
-                value=f"<t:{int(channel.created_at.timestamp())}:F>",
+                name="Closed",
+                value=f"<t:{int(discord_utils.utcnow().timestamp())}:f>",
                 inline=True
             )
             transcript_embed.add_field(
-                name=f"Users in Transcript ({len(users_in_transcript)})",
+                name="Closed By",
+                value=interaction.user.mention,
+                inline=True
+            )
+            
+            transcript_embed.add_field(
+                name=f"Participants ({len(users_in_transcript)})",
                 value=user_list or "No users",
                 inline=False
             )
+            
             transcript_embed.set_thumbnail(
                 url=interaction.guild.icon.url if interaction.guild.icon else None
             )
             transcript_embed.set_footer(
-                text=f"Closed by {interaction.user.name}",
+                text=f"HTML Transcript attached • {channel.id}",
                 icon_url=interaction.user.display_avatar.url
             )
 
@@ -123,20 +195,40 @@ class TicketCloseView(discord.ui.View):
 
             await transcript_channel.send(embed=transcript_embed, file=file)
 
-            # ───────────── RENAME CHANNEL ─────────────
+            # ───────────── CLOSE CHANNEL ─────────────
+            # Rename the channel
             new_name = f"closed-{ticket_owner.name}".lower()
             await channel.edit(name=new_name)
+            
+            # Lock the channel - only allow staff to view and send messages
+            # Disable sending for regular users, keep viewing for history
+            overwrites = {
+                interaction.guild.default_role: discord.PermissionOverwrite(
+                    view_channel=False
+                ),
+                ticket_owner: discord.PermissionOverwrite(
+                    view_channel=True,
+                    send_messages=False,
+                    read_message_history=True
+                ),
+                interaction.guild.me: discord.PermissionOverwrite(
+                    view_channel=True,
+                    send_messages=True,
+                    manage_channels=True
+                )
+            }
+            await channel.edit(overwrites=overwrites)
 
             await interaction.followup.send(
-                f"✅ Ticket closed!\n"
-                f"📑 Transcript sent to {transcript_channel.mention}\n"
-                f"📝 Channel renamed to `{new_name}`",
+                f"Ticket closed successfully!\n"
+                f"Transcript sent to {transcript_channel.mention}\n"
+                f"Channel locked and renamed to `{new_name}`",
                 ephemeral=True
             )
 
         except discord.Forbidden:
             await interaction.followup.send(
-                "❌ I don't have permission to rename the channel or send to the transcript channel!",
+                "I don't have permission to rename the channel or send to the transcript channel!",
                 ephemeral=True
             )
         except Exception as e:
@@ -144,7 +236,7 @@ class TicketCloseView(discord.ui.View):
             import traceback
             traceback.print_exc()
             await interaction.followup.send(
-                f"❌ Error closing ticket: {str(e)}",
+                f"Error closing ticket: {str(e)}",
                 ephemeral=True
             )
 
@@ -175,7 +267,7 @@ class TicketManager:
             if not embed:
                 if not interaction.response.is_done():
                     await interaction.response.send_message(
-                        "❌ Attached embed not found.",
+                        "Attached embed not found.",
                         ephemeral=True
                     )
                 return
@@ -227,7 +319,7 @@ class TicketManager:
             if len(existing) >= limit:
                 if not interaction.response.is_done():
                     await interaction.response.send_message(
-                        f"❌ You can only have **{limit}** open ticket(s) for **{option['label']}**.",
+                        f"You can only have **{limit}** open ticket(s) for **{option['label']}**.",
                         ephemeral=True
                     )
                 return
@@ -247,6 +339,28 @@ class TicketManager:
             )
         }
 
+        # ───────────── ADD SUPPORT TEAM ACCESS ─────────────
+        # Load support team role from settings
+        import json
+        import os
+        settings_file = os.path.join("data/settings", f"{guild.id}.json")
+        
+        if os.path.exists(settings_file):
+            with open(settings_file, "r", encoding="utf-8") as f:
+                settings = json.load(f)
+                support_team_role_id = settings.get("support_team_role_id")
+                
+                if support_team_role_id:
+                    support_role = guild.get_role(support_team_role_id)
+                    if support_role:
+                        overwrites[support_role] = discord.PermissionOverwrite(
+                            view_channel=True,
+                            send_messages=True,
+                            read_message_history=True,
+                            manage_messages=True,
+                            manage_channels=True
+                        )
+
         # ───────────── CREATE CHANNEL ─────────────
         channel = await guild.create_text_channel(
             name=channel_name,
@@ -255,8 +369,10 @@ class TicketManager:
             reason=f"Ticket opened by {user}"
         )
 
-        # 🔐 STORE PANEL NAME (CRITICAL)
-        await channel.edit(topic=f"panel:{option['panel_name']}")
+        # 🔐 STORE PANEL NAME + OWNER (CRITICAL)
+        # Store both panel name and ticket owner id so persistent views
+        # can resolve the correct ticket owner after restarts.
+        await channel.edit(topic=f"panel:{option['panel_name']};owner:{user.id}")
 
         # ───────────── INTRO EMBED ─────────────
         template = option.get("ticket_message") or DEFAULT_TICKET_TEMPLATE
@@ -284,11 +400,11 @@ class TicketManager:
         # ───────────── CONFIRM USER ─────────────
         if interaction.response.is_done():
             await interaction.followup.send(
-                f"✅ Ticket created: {channel.mention}",
+                f"Ticket created: {channel.mention}",
                 ephemeral=True
             )
         else:
             await interaction.response.send_message(
-                f"✅ Ticket created: {channel.mention}",
+                f"Ticket created: {channel.mention}",
                 ephemeral=True
             )
