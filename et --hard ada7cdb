@@ -1,0 +1,11 @@
+[33mdb4c6f9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: rebase (finish): returning to refs/heads/main
+[33mdb4c6f9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{1}: rebase (pick): Add gitignore and remove env file
+[33mf7a9032[m HEAD@{2}: rebase (start): checkout HEAD~3
+[33mc4370c2[m HEAD@{3}: rebase (finish): returning to refs/heads/main
+[33mc4370c2[m HEAD@{4}: rebase (pick): Add gitignore and remove env file
+[33mada7cdb[m HEAD@{5}: rebase (start): checkout HEAD~2
+[33m16e62a7[m HEAD@{6}: commit: Add gitignore and remove env file
+[33ma634257[m HEAD@{7}: commit: env removed
+[33mada7cdb[m HEAD@{8}: commit: fixes
+[33mf7a9032[m HEAD@{9}: pull: Fast-forward
+[33ma669841[m HEAD@{10}: clone: from https://github.com/Bhavyagupta24/guibot
