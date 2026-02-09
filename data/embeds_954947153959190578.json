@@ -1,0 +1,96 @@
+{
+  "test": {
+    "title": "Embed: test",
+    "description": "Click the buttons below to edit this embed.",
+    "color": "",
+    "author_name": "",
+    "author_url": "",
+    "author_icon": "",
+    "footer_text": "",
+    "footer_icon": "",
+    "image_url": "",
+    "thumbnail_url": "",
+    "fields": [],
+    "buttons": [
+      {
+        "label": "test",
+        "url": "https://discord.com/channels/954947153959190578/1468295567682699311",
+        "emoji": "<:stolen_emoji_blaze:1469347585667108956>"
+      }
+    ]
+  },
+  "test3": {
+    "title": "Embed: test3",
+    "description": "Click the buttons below to edit this embed.",
+    "color": "",
+    "author_name": "",
+    "author_url": "",
+    "author_icon": "",
+    "footer_text": "",
+    "footer_icon": "",
+    "image_url": "",
+    "thumbnail_url": "",
+    "fields": [],
+    "buttons": [
+      {
+        "label": "Buy Robux",
+        "url": "https://roblox.com",
+        "emoji": "💰"
+      },
+      {
+        "label": "Buy V-Bucks",
+        "url": "https://epicgames.com",
+        "emoji": "🪙"
+      },
+      {
+        "label": "Buy Valorant Points",
+        "url": "https://playvalorant.com",
+        "emoji": "🎯"
+      }
+    ]
+  },
+  "test4": {
+    "title": "Embed: test4",
+    "description": "Click the buttons below to edit this embed.",
+    "color": "",
+    "author_name": "",
+    "author_url": "",
+    "author_icon": "",
+    "footer_text": "",
+    "footer_icon": "",
+    "image_url": "",
+    "thumbnail_url": "",
+    "fields": [],
+    "buttons": [
+      {
+        "label": "Buy Robux",
+        "url": "https://roblox.com",
+        "emoji": "💰"
+      },
+      {
+        "label": "Buy V-Bucks",
+        "url": "https://epicgames.com",
+        "emoji": "🪙"
+      },
+      {
+        "label": "Buy Valorant Points",
+        "url": "https://playvalorant.com",
+        "emoji": "🎯"
+      }
+    ]
+  },
+  "bhavya24": {
+    "title": "Bhavya OP",
+    "description": "Bhavya is greatest of all",
+    "color": "",
+    "author_name": "",
+    "author_url": "",
+    "author_icon": "",
+    "footer_text": "",
+    "footer_icon": "",
+    "image_url": "",
+    "thumbnail_url": "",
+    "fields": [],
+    "buttons": []
+  }
+}
